@@ -142,7 +142,7 @@ readGpSegConfigFromFTSFiles(int *total_dbs)
 	char	address[MAXHOSTNAMELEN];
 	char	buf[MAXHOSTNAMELEN * 2 + 32];
 
-	Assert(!IsTransactionState());
+	Assert(!IsTransactionState() || IS_HOT_STANDBY_QD());
 
 	/* notify and wait FTS to finish a probe and update the dump file */
 	FtsNotifyProber();	
@@ -186,6 +186,18 @@ readGpSegConfigFromFTSFiles(int *total_dbs)
 
 	*total_dbs = idx;
 	return configs;
+}
+
+bool
+checkGpSegConfigFtsFiles()
+{
+	FILE *fd = AllocateFile(GPSEGCONFIGDUMPFILE, "r");
+
+	if (!fd)
+		return false;
+
+	FreeFile(fd);
+	return true;
 }
 
 /*
@@ -372,10 +384,17 @@ getCdbComponentInfo(void)
 
 	HTAB	   *hostPrimaryCountHash = hostPrimaryCountHashTableInit();
 
-	if (IsTransactionState())
-		configs = readGpSegConfigFromCatalog(&total_dbs);
-	else
+	if (EnableHotDR)
+	{
 		configs = readGpSegConfigFromFTSFiles(&total_dbs);
+	}
+	else
+	{
+		if (IsTransactionState())
+			configs = readGpSegConfigFromCatalog(&total_dbs);
+		else
+			configs = readGpSegConfigFromFTSFiles(&total_dbs);
+	}
 
 	component_databases = palloc0(sizeof(CdbComponentDatabases));
 
