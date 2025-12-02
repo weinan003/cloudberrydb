@@ -448,7 +448,18 @@ make_subplan(PlannerInfo *root, Query *orig_subquery,
 	if (CdbPathLocus_IsGeneral(best_path->locus) &&
 		(contain_volatile_functions((Node *) subroot->parse->havingQual) ||
 		 contain_volatile_functions((Node *) best_path->pathtarget->exprs)))
-		CdbPathLocus_MakeSingleQE(&(best_path->locus), getgpsegmentCount());
+	{
+		/* temporary bring the plan_params back to check if outer params exists */
+		root->plan_params = plan_params;
+
+		if (contains_outer_params((Node *) best_path->pathtarget->exprs, subroot))
+			CdbPathLocus_MakeOuterQuery(&(best_path->locus));
+		else
+			CdbPathLocus_MakeSingleQE(&(best_path->locus), getgpsegmentCount());
+
+		plan_params = root->plan_params;
+		root->plan_params = NIL;
+	}
 
 	best_path = cdbllize_adjust_init_plan_path(root, best_path);
 

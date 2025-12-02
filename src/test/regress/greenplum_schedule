@@ -391,5 +391,6 @@ test: dboptions
 
 # test dispatch and result handling of gp_log_memory_backend_contexts
 test: gp_log_mem_dispatch
+test: outerquery_on_subquery_tlist
 
 # end of tests
