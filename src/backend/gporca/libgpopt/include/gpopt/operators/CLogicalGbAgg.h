@@ -147,6 +147,7 @@ public:
 
 	// match function
 	BOOL Matches(COperator *pop) const override;
+	BOOL ApproximateMatches(COperator *pop, ColRefToExprMap *dict) const override;
 
 	// hash function
 	ULONG HashValue() const override;

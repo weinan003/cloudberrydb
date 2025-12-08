@@ -39,6 +39,10 @@ using ColRefToColRefMap =
 	CHashMap<CColRef, CColRef, CColRef::HashValue, CColRef::Equals,
 			 CleanupNULL<CColRef>, CleanupNULL<CColRef>>;
 
+using ColRefToExprMap =
+	CHashMap<CColRef, CExpression, CColRef::HashValue, CColRef::Equals,
+			 CleanupNULL<CColRef>, CleanupNULL<CExpression>>;
+
 //---------------------------------------------------------------------------
 //	@class:
 //		COperator
@@ -377,6 +381,12 @@ public:
 	// print
 	virtual IOstream &OsPrint(IOstream &os) const;
 
+	// approximate match function;
+	virtual BOOL
+	ApproximateMatches(COperator *pop, ColRefToExprMap *) const
+	{
+		return Matches(pop);
+	};
 };	// class COperator
 
 }  // namespace gpopt

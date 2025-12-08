@@ -170,7 +170,9 @@ CTranslatorDXLToExpr::CTranslatorDXLToExpr(CMemoryPool *mp,
 	  m_pdrgpmdname(nullptr),
 	  m_phmulpdxlnCTEProducer(nullptr),
 	  m_ulCTEId(gpos::ulong_max),
-	  m_pcf(nullptr)
+	  m_pcf(nullptr),
+	  m_dxl_subquery_nodes(nullptr),
+	  m_subquery_pexpr_array(nullptr)
 {
 	// initialize hash tables
 	m_phmulcr = GPOS_NEW(m_mp) UlongToColRefMap(m_mp);
@@ -199,6 +201,8 @@ CTranslatorDXLToExpr::~CTranslatorDXLToExpr()
 	m_phmululCTE->Release();
 	CRefCount::SafeRelease(m_pdrgpulOutputColRefs);
 	CRefCount::SafeRelease(m_pdrgpmdname);
+	CRefCount::SafeRelease(m_dxl_subquery_nodes);
+	CRefCount::SafeRelease(m_subquery_pexpr_array);
 }
 
 //---------------------------------------------------------------------------
@@ -445,8 +449,18 @@ CTranslatorDXLToExpr::PexprTranslateQuery(
 	CAutoTimer at("\n[OPT]: DXL To Expr Translation Time",
 				  GPOS_FTRACE(EopttracePrintOptimizationStatistics));
 
+	CDXLNodeArray *dxl_subquery_nodes = dxlnode->GetDXLSubqueryNodes();
+	dxl_subquery_nodes->AddRef();
+	m_dxl_subquery_nodes = dxl_subquery_nodes;
+
 	CExpression *pexpr =
 		Pexpr(dxlnode, query_output_dxlnode_array, cte_producers);
+
+	if (m_subquery_pexpr_array)
+	{
+		m_subquery_pexpr_array->AddRef();
+		pexpr->SetSubqueryPexpr(m_subquery_pexpr_array);
+	}
 
 	// We need to mark all the colrefs which are not being referenced in the query as unused.
 	// This needs to be done here after translating since we won't know which columns are
@@ -524,49 +538,96 @@ CTranslatorDXLToExpr::PexprLogical(const CDXLNode *dxlnode)
 	GPOS_ASSERT(EdxloptypeLogical ==
 				dxlnode->GetOperator()->GetDXLOperatorType());
 	CDXLOperator *dxl_op = dxlnode->GetOperator();
+	CExpression *pexpr = nullptr;
 
 	switch (dxl_op->GetDXLOperator())
 	{
 		case EdxlopLogicalGet:
 		case EdxlopLogicalForeignGet:
-			return CTranslatorDXLToExpr::PexprLogicalGet(dxlnode);
+			pexpr = PexprLogicalGet(dxlnode);
+			break;
 		case EdxlopLogicalTVF:
-			return CTranslatorDXLToExpr::PexprLogicalTVF(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalTVF(dxlnode);
+			break;
 		case EdxlopLogicalSelect:
-			return CTranslatorDXLToExpr::PexprLogicalSelect(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalSelect(dxlnode);
+			break;
 		case EdxlopLogicalProject:
-			return CTranslatorDXLToExpr::PexprLogicalProject(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalProject(dxlnode);
+			break;
 		case EdxlopLogicalCTEAnchor:
-			return CTranslatorDXLToExpr::PexprLogicalCTEAnchor(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalCTEAnchor(dxlnode);
+			break;
 		case EdxlopLogicalCTEProducer:
-			return CTranslatorDXLToExpr::PexprLogicalCTEProducer(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalCTEProducer(dxlnode);
+			break;
 		case EdxlopLogicalCTEConsumer:
-			return CTranslatorDXLToExpr::PexprLogicalCTEConsumer(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalCTEConsumer(dxlnode);
+			break;
 		case EdxlopLogicalGrpBy:
-			return CTranslatorDXLToExpr::PexprLogicalGroupBy(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalGroupBy(dxlnode);
+			break;
 		case EdxlopLogicalLimit:
-			return CTranslatorDXLToExpr::PexprLogicalLimit(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalLimit(dxlnode);
+			break;
 		case EdxlopLogicalJoin:
-			return CTranslatorDXLToExpr::PexprLogicalJoin(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalJoin(dxlnode);
+			break;
 		case EdxlopLogicalConstTable:
-			return CTranslatorDXLToExpr::PexprLogicalConstTableGet(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalConstTableGet(dxlnode);
+			break;
 		case EdxlopLogicalSetOp:
-			return CTranslatorDXLToExpr::PexprLogicalSetOp(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalSetOp(dxlnode);
+			break;
 		case EdxlopLogicalWindow:
-			return CTranslatorDXLToExpr::PexprLogicalSeqPr(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalSeqPr(dxlnode);
+			break;
 		case EdxlopLogicalInsert:
-			return CTranslatorDXLToExpr::PexprLogicalInsert(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalInsert(dxlnode);
+			break;
 		case EdxlopLogicalDelete:
-			return CTranslatorDXLToExpr::PexprLogicalDelete(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalDelete(dxlnode);
+			break;
 		case EdxlopLogicalUpdate:
-			return CTranslatorDXLToExpr::PexprLogicalUpdate(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalUpdate(dxlnode);
+			break;
 		case EdxlopLogicalCTAS:
-			return CTranslatorDXLToExpr::PexprLogicalCTAS(dxlnode);
+			pexpr = CTranslatorDXLToExpr::PexprLogicalCTAS(dxlnode);
+			break;
 		default:
 			GPOS_RAISE(gpopt::ExmaGPOPT, gpopt::ExmiUnsupportedOp,
 					   dxl_op->GetOpNameStr()->GetBuffer());
-			return nullptr;
+			break;
 	}
+
+	if (m_dxl_subquery_nodes && pexpr)
+	{
+		// check if current dxl node is a subquery node
+		const ULONG ulSubqueries = m_dxl_subquery_nodes->Size();
+		CExpression *match = nullptr;
+
+		for (ULONG ul = 0; ul < ulSubqueries && (match == nullptr); ++ul)
+		{
+			if ((*m_dxl_subquery_nodes)[ul] == dxlnode)
+			{
+				match = pexpr;
+			}
+		}
+
+		if (match)
+		{
+			// store the mapping between the DXL subquery node and its translated Expr
+			if (nullptr == m_subquery_pexpr_array)
+			{
+				m_subquery_pexpr_array = GPOS_NEW(m_mp) CExpressionArray(m_mp);
+			}
+
+			pexpr->AddRef();
+			m_subquery_pexpr_array->Append(pexpr);
+		}
+	}
+
+	return pexpr;
 }
 
 

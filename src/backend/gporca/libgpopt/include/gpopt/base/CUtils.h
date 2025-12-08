@@ -1031,6 +1031,14 @@ public:
 													 CColRef *pcolref,
 													 CExpression *pprojExpr);
 
+	static BOOL FColRefApproximateEqual(const CColRefArray *lhscr,
+										const CColRefArray *rhscr,
+										ColRefToExprMap *dict);
+
+	static BOOL FColRefApproximateEqual(const CColRef *pcr1,
+										const CColRef *pcr2,
+										ColRefToExprMap *dict);
+
 };	// class CUtils
 
 // hash set from expressions

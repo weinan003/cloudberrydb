@@ -29,7 +29,8 @@ using namespace gpdxl;
 CDXLNode::CDXLNode(CMemoryPool *mp)
 	: m_dxl_op(nullptr),
 	  m_dxl_properties(nullptr),
-	  m_direct_dispatch_info(nullptr)
+	  m_direct_dispatch_info(nullptr),
+	  m_dxl_subquery_nodes(nullptr)
 {
 	m_dxl_array = GPOS_NEW(mp) CDXLNodeArray(mp);
 }
@@ -45,7 +46,8 @@ CDXLNode::CDXLNode(CMemoryPool *mp)
 CDXLNode::CDXLNode(CMemoryPool *mp, CDXLOperator *dxl_op)
 	: m_dxl_op(dxl_op),
 	  m_dxl_properties(nullptr),
-	  m_direct_dispatch_info(nullptr)
+	  m_direct_dispatch_info(nullptr),
+	  m_dxl_subquery_nodes(nullptr)
 {
 	GPOS_ASSERT(nullptr != dxl_op);
 	m_dxl_array = GPOS_NEW(mp) CDXLNodeArray(mp);
@@ -64,7 +66,8 @@ CDXLNode::CDXLNode(CMemoryPool *mp, CDXLOperator *dxl_op,
 	: m_dxl_op(dxl_op),
 	  m_dxl_properties(nullptr),
 	  m_dxl_array(nullptr),
-	  m_direct_dispatch_info(nullptr)
+	  m_direct_dispatch_info(nullptr),
+	  m_dxl_subquery_nodes(nullptr)
 {
 	GPOS_ASSERT(nullptr != dxl_op);
 	GPOS_ASSERT(nullptr != child_dxlnode);
@@ -87,7 +90,8 @@ CDXLNode::CDXLNode(CMemoryPool *mp, CDXLOperator *dxl_op,
 	: m_dxl_op(dxl_op),
 	  m_dxl_properties(nullptr),
 	  m_dxl_array(nullptr),
-	  m_direct_dispatch_info(nullptr)
+	  m_direct_dispatch_info(nullptr),
+	  m_dxl_subquery_nodes(nullptr)
 {
 	GPOS_ASSERT(nullptr != dxl_op);
 	GPOS_ASSERT(nullptr != first_child_dxlnode);
@@ -113,7 +117,8 @@ CDXLNode::CDXLNode(CMemoryPool *mp, CDXLOperator *dxl_op,
 	: m_dxl_op(dxl_op),
 	  m_dxl_properties(nullptr),
 	  m_dxl_array(nullptr),
-	  m_direct_dispatch_info(nullptr)
+	  m_direct_dispatch_info(nullptr),
+	  m_dxl_subquery_nodes(nullptr)
 {
 	GPOS_ASSERT(nullptr != dxl_op);
 	GPOS_ASSERT(nullptr != first_child_dxlnode);
@@ -138,7 +143,8 @@ CDXLNode::CDXLNode(CDXLOperator *dxl_op, CDXLNodeArray *dxl_array)
 	: m_dxl_op(dxl_op),
 	  m_dxl_properties(nullptr),
 	  m_dxl_array(dxl_array),
-	  m_direct_dispatch_info(nullptr)
+	  m_direct_dispatch_info(nullptr),
+	  m_dxl_subquery_nodes(nullptr)
 {
 	GPOS_ASSERT(nullptr != dxl_op);
 	GPOS_ASSERT(nullptr != dxl_array);
@@ -158,6 +164,7 @@ CDXLNode::~CDXLNode()
 	CRefCount::SafeRelease(m_dxl_op);
 	CRefCount::SafeRelease(m_dxl_properties);
 	CRefCount::SafeRelease(m_direct_dispatch_info);
+	CRefCount::SafeRelease(m_dxl_subquery_nodes);
 }
 
 //---------------------------------------------------------------------------
@@ -290,6 +297,11 @@ CDXLNode::SetDirectDispatchInfo(
 	m_direct_dispatch_info = dxl_direct_dispatch_info;
 }
 
+void
+CDXLNode::SetSubqueryNodes(CDXLNodeArray *dxl_subquery_nodes)
+{
+	m_dxl_subquery_nodes = dxl_subquery_nodes;
+}
 
 //---------------------------------------------------------------------------
 //	@function:

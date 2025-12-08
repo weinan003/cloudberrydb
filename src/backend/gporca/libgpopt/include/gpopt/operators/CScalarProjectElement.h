@@ -80,6 +80,10 @@ public:
 	// match function
 	BOOL Matches(COperator *pop) const override;
 
+	// approximate match function
+	BOOL ApproximateMatches(COperator *pop,
+							ColRefToExprMap *dict) const override;
+
 	// sensitivity to order of inputs
 	BOOL FInputOrderSensitive() const override;
 

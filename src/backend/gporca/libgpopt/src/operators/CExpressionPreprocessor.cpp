@@ -25,6 +25,7 @@
 #include "gpopt/exception.h"
 #include "gpopt/mdcache/CMDAccessor.h"
 #include "gpopt/operators/CDedupSupersetPreprocessor.h"
+#include "gpopt/operators/CTransCTEPreprocessor.h"
 #include "gpopt/operators/CExpressionFactorizer.h"
 #include "gpopt/operators/CExpressionUtils.h"
 #include "gpopt/operators/CJoinOrderHintsPreprocessor.h"
@@ -3342,13 +3343,19 @@ CExpressionPreprocessor::PexprPreprocess(
 
 	TRCAE_PREPROCESS_BEGIN(pexpr);
 
+	// collect common subqueries to CTE
+	CExpression *pexprDistinctCTE = CTransCTEPreprocessor::PexprPreprocess(mp, pexpr);
+	GPOS_CHECK_ABORT;
+	TRCAE_PREPROCESS_STEP(pexprDistinctCTE, "Remove unused CTEs");
+
 	// remove unused CTE anchors
 	CCTEInfo *pcteinfo = COptCtxt::PoctxtFromTLS()->Pcteinfo();
 	pcteinfo->MarkUnusedCTEs();
 
-	CExpression *pexprNoUnusedCTEs = PexprRemoveUnusedCTEs(mp, pexpr);
+	CExpression *pexprNoUnusedCTEs = PexprRemoveUnusedCTEs(mp, pexprDistinctCTE);
 	GPOS_CHECK_ABORT;
 	TRCAE_PREPROCESS_STEP(pexprNoUnusedCTEs, "Remove unused CTEs");
+	pexprDistinctCTE->Release();
 
 	// remove intermediate superfluous limit
 	CExpression *pexprSimplifiedLimit =

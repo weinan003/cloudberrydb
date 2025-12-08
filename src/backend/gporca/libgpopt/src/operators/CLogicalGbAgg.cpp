@@ -578,6 +578,28 @@ CLogicalGbAgg::Matches(COperator *pop) const
 		   CColRef::Equals(m_pdrgpcrArgDQA, popAgg->PdrgpcrArgDQA());
 }
 
+BOOL
+CLogicalGbAgg::ApproximateMatches(COperator *pop,
+								  ColRefToExprMap *dict) const
+{
+	if (pop->Eopid() != Eopid())
+	{
+		return false;
+	}
+
+	CLogicalGbAgg *popAgg = dynamic_cast<CLogicalGbAgg *>(pop);
+
+	return FGeneratesDuplicates() == popAgg->FGeneratesDuplicates() &&
+		   popAgg->Egbaggtype() == m_egbaggtype &&
+		   CUtils::FColRefApproximateEqual(m_pdrgpcr, popAgg->m_pdrgpcr,
+										   dict) &&
+		   CUtils::FColRefApproximateEqual(m_pdrgpcrMinimal, 
+										   popAgg->PdrgpcrMinimal(),
+										   dict) &&
+		   CUtils::FColRefApproximateEqual(m_pdrgpcrArgDQA,
+										   popAgg->PdrgpcrArgDQA(),
+										   dict);
+}
 //---------------------------------------------------------------------------
 //	@function:
 //		CLogicalGbAgg::PxfsCandidates

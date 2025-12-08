@@ -95,6 +95,9 @@ private:
 	// id of origin group expression, used for debugging expressions extracted from memo
 	ULONG m_ulOriginGrpExprId;
 
+	// array of subquery expressions
+	CExpressionArray *m_subquery_pexpr_array;
+
 	// get expression's derived property given its type
 	CDrvdProp *Pdp(const CDrvdProp::EPropType ept) const;
 
@@ -200,6 +203,20 @@ public:
 	Pstats() const
 	{
 		return m_pstats;
+	}
+
+	// get subquery expressions
+	CExpressionArray *
+	PsubqueryPexpr() const
+	{
+		return m_subquery_pexpr_array;
+	}
+
+	void SetSubqueryPexpr(CExpressionArray *pexpr_array)
+	{
+		GPOS_ASSERT(nullptr != pexpr_array);
+		GPOS_ASSERT(nullptr == m_subquery_pexpr_array);
+		m_subquery_pexpr_array = pexpr_array;
 	}
 
 	// cost accessor

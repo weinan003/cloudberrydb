@@ -67,7 +67,8 @@ CExpression::CExpression(CMemoryPool *mp, COperator *pop,
 	  m_pgexpr(pgexpr),
 	  m_cost(GPOPT_INVALID_COST),
 	  m_ulOriginGrpId(gpos::ulong_max),
-	  m_ulOriginGrpExprId(gpos::ulong_max)
+	  m_ulOriginGrpExprId(gpos::ulong_max),
+	  m_subquery_pexpr_array(nullptr)
 {
 	GPOS_ASSERT(nullptr != mp);
 	GPOS_ASSERT(nullptr != pop);
@@ -102,7 +103,8 @@ CExpression::CExpression(CMemoryPool *mp, COperator *pop, CExpression *pexpr)
 	  m_pgexpr(nullptr),
 	  m_cost(GPOPT_INVALID_COST),
 	  m_ulOriginGrpId(gpos::ulong_max),
-	  m_ulOriginGrpExprId(gpos::ulong_max)
+	  m_ulOriginGrpExprId(gpos::ulong_max),
+	  m_subquery_pexpr_array(nullptr)
 {
 	GPOS_ASSERT(nullptr != mp);
 	GPOS_ASSERT(nullptr != pop);
@@ -139,7 +141,8 @@ CExpression::CExpression(CMemoryPool *mp, COperator *pop,
 	  m_pgexpr(nullptr),
 	  m_cost(GPOPT_INVALID_COST),
 	  m_ulOriginGrpId(gpos::ulong_max),
-	  m_ulOriginGrpExprId(gpos::ulong_max)
+	  m_ulOriginGrpExprId(gpos::ulong_max),
+	  m_subquery_pexpr_array(nullptr)
 {
 	GPOS_ASSERT(nullptr != mp);
 	GPOS_ASSERT(nullptr != pop);
@@ -180,7 +183,8 @@ CExpression::CExpression(CMemoryPool *mp, COperator *pop,
 	  m_pgexpr(nullptr),
 	  m_cost(GPOPT_INVALID_COST),
 	  m_ulOriginGrpId(gpos::ulong_max),
-	  m_ulOriginGrpExprId(gpos::ulong_max)
+	  m_ulOriginGrpExprId(gpos::ulong_max),
+	  m_subquery_pexpr_array(nullptr)
 {
 	GPOS_ASSERT(nullptr != mp);
 	GPOS_ASSERT(nullptr != pop);
@@ -221,7 +225,8 @@ CExpression::CExpression(CMemoryPool *mp, COperator *pop,
 	  m_pgexpr(nullptr),
 	  m_cost(GPOPT_INVALID_COST),
 	  m_ulOriginGrpId(gpos::ulong_max),
-	  m_ulOriginGrpExprId(gpos::ulong_max)
+	  m_ulOriginGrpExprId(gpos::ulong_max),
+	  m_subquery_pexpr_array(nullptr)
 {
 	GPOS_ASSERT(nullptr != mp);
 	GPOS_ASSERT(nullptr != pop);
@@ -255,7 +260,8 @@ CExpression::CExpression(CMemoryPool *mp, COperator *pop,
 	  m_pgexpr(pgexpr),
 	  m_cost(cost),
 	  m_ulOriginGrpId(gpos::ulong_max),
-	  m_ulOriginGrpExprId(gpos::ulong_max)
+	  m_ulOriginGrpExprId(gpos::ulong_max),
+	  m_subquery_pexpr_array(nullptr)
 {
 	GPOS_ASSERT(nullptr != mp);
 	GPOS_ASSERT(nullptr != pop);
@@ -289,6 +295,7 @@ CExpression::~CExpression()
 		CRefCount::SafeRelease(m_pdpplan);
 		CRefCount::SafeRelease(m_pdpscalar);
 		CRefCount::SafeRelease(m_pdrgpexpr);
+		CRefCount::SafeRelease(m_subquery_pexpr_array);
 
 		m_pop->Release();
 	}

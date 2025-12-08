@@ -117,6 +117,11 @@ CScalarCmp::Matches(COperator *pop) const
 	return false;
 }
 
+BOOL
+CScalarCmp::ApproximateMatches(COperator *pop, ColRefToExprMap *) const
+{
+	return pop->Eopid() == Eopid();
+}
 //---------------------------------------------------------------------------
 //	@function:
 //		CScalarCmp::FInputOrderSensitive

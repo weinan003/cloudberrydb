@@ -62,6 +62,7 @@
 #include "gpopt/operators/CScalarProjectElement.h"
 #include "gpopt/operators/CScalarProjectList.h"
 #include "gpopt/operators/CScalarValuesList.h"
+#include "gpopt/operators/CTransCTEPreprocessor.h"
 #include "gpopt/optimizer/COptimizerConfig.h"
 #include "gpopt/search/CMemo.h"
 #include "gpopt/translate/CTranslatorExprToDXLUtils.h"
@@ -5153,5 +5154,60 @@ CUtils::ReplaceColrefWithProjectExpr(CMemoryPool *mp, CExpression *pexpr,
 	COperator *pop = pexpr->Pop();
 	pop->AddRef();
 	return GPOS_NEW(mp) CExpression(mp, pop, pdrgpexprChildren);
+}
+
+BOOL
+CUtils::FColRefApproximateEqual(const CColRefArray *lhscr,
+								const CColRefArray *rhscr,
+								ColRefToExprMap *dict)
+{
+	if (nullptr == lhscr || nullptr == rhscr)
+	{
+		return nullptr == lhscr && nullptr == rhscr;
+	}
+
+	if (lhscr->Size() != rhscr->Size())
+	{
+		return false;
+	}
+
+	const ULONG length = lhscr->Size();
+	for (ULONG ul = 0; ul < length; ul++)
+	{
+		if (!FColRefApproximateEqual((*lhscr)[ul], (*rhscr)[ul], dict))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+BOOL
+CUtils::FColRefApproximateEqual(const CColRef *lhscr, const CColRef *rhscr,
+								ColRefToExprMap *dict)
+{
+	if (lhscr->Ecrt() == rhscr->Ecrt())
+	{
+		if (lhscr->Ecrt() == CColRef::EcrtTable)
+		{
+			CColRefTable *lhstblcr =
+				CColRefTable::PcrConvert(const_cast<CColRef *>(lhscr));
+			CColRefTable *rhstblcr =
+				CColRefTable::PcrConvert(const_cast<CColRef *>(rhscr));
+
+			return (lhstblcr->GetMdidTable()->Equals(rhstblcr->GetMdidTable()) &&
+					lhstblcr->AttrNum() == rhstblcr->AttrNum());
+		}
+		else
+		{
+			// computed column: look up in the dictionaries
+			CExpression *lpexpr = dict->Find(lhscr);
+			CExpression *rpexpr = dict->Find(rhscr);
+			return CTransCTEPreprocessor::ApproximateEquals(lpexpr, rpexpr, dict);
+		}
+	}
+
+	return false;
 }
 // EOF

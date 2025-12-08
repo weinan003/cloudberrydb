@@ -138,7 +138,8 @@ CTranslatorQueryToDXL::CTranslatorQueryToDXL(
 	  m_query_level_to_cte_map(nullptr),
 	  m_dxl_query_output_cols(nullptr),
 	  m_dxl_cte_producers(nullptr),
-	  m_cteid_at_current_query_level_map(nullptr)
+	  m_cteid_at_current_query_level_map(nullptr),
+	  m_dxl_subquery_nodes(nullptr)
 {
 	GPOS_ASSERT(nullptr != query);
 	CheckSupportedCmdType(query);
@@ -228,6 +229,8 @@ CTranslatorQueryToDXL::CTranslatorQueryToDXL(
 	m_scalar_translator = GPOS_NEW(m_mp)
 		CTranslatorScalarToDXL(m_context, m_md_accessor, m_query_level,
 							   m_query_level_to_cte_map, m_dxl_cte_producers);
+
+	m_dxl_subquery_nodes = GPOS_NEW(m_mp) CDXLNodeArray(m_mp);
 }
 
 //---------------------------------------------------------------------------
@@ -740,6 +743,13 @@ CTranslatorQueryToDXL::TranslateSelectQueryToDXL()
 		GPOS_ASSERT(nullptr != dxl_cte_anchor_bottom);
 		dxl_cte_anchor_bottom->AddChild(result_dxlnode);
 		result_dxlnode = dxl_cte_anchor_top;
+	}
+
+	if (m_dxl_subquery_nodes)
+	{
+		m_dxl_subquery_nodes->AddRef();
+
+		result_dxlnode->SetSubqueryNodes(m_dxl_subquery_nodes);
 	}
 
 	return result_dxlnode;
@@ -4028,6 +4038,13 @@ CTranslatorQueryToDXL::TranslateDerivedTablesToDXL(const RangeTblEntry *rte,
 	m_var_to_colid_map->LoadDerivedTblColumns(
 		current_query_level, rt_index, query_output_cols_dxlnode_array,
 		query_to_dxl_translator.Pquery()->targetList);
+
+		// hack
+	if ((*derived_tbl_dxlnode)[1]->GetOperator()->GetDXLOperator() == EdxlopLogicalJoin)
+	{
+		m_dxl_subquery_nodes->Append((*derived_tbl_dxlnode)[1]);
+	}
+
 
 	return derived_tbl_dxlnode;
 }

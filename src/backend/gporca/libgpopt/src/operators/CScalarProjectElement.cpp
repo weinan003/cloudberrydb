@@ -15,6 +15,7 @@
 
 #include "gpopt/base/CColRefSet.h"
 #include "gpopt/base/COptCtxt.h"
+#include "gpopt/base/CUtils.h"
 
 using namespace gpopt;
 
@@ -53,6 +54,24 @@ CScalarProjectElement::Matches(COperator *pop) const
 
 		// match if column reference is same
 		return Pcr() == popScPrEl->Pcr();
+	}
+
+	return false;
+}
+
+// approximate match function
+BOOL CScalarProjectElement::ApproximateMatches(COperator *pop,
+											   ColRefToExprMap *dict) const
+{
+	if (pop->Eopid() == Eopid())
+	{
+		CScalarProjectElement *popScPrEl =
+			CScalarProjectElement::PopConvert(pop);
+		CColRef *lhscr = Pcr();
+		CColRef *rhscr = popScPrEl->Pcr();
+
+		// match if column reference is same
+		return CUtils::FColRefApproximateEqual(lhscr, rhscr, dict);
 	}
 
 	return false;

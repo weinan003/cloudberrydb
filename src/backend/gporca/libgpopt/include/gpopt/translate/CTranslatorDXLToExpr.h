@@ -99,6 +99,12 @@ private:
 	// a copy of the pointer to column factory, obtained at construction time
 	CColumnFactory *m_pcf;
 
+	// reference an array of DXL nodes which is generated from subqueries
+	CDXLNodeArray *m_dxl_subquery_nodes;
+
+	// array of translated subquery expressions
+	CExpressionArray *m_subquery_pexpr_array;
+
 	// private copy ctor
 	CTranslatorDXLToExpr(const CTranslatorDXLToExpr &);
 

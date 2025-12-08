@@ -129,6 +129,9 @@ private:
 	// CTE producer IDs defined at the current query level
 	UlongBoolHashMap *m_cteid_at_current_query_level_map;
 
+	// list of subqueries related DXL nodes
+	CDXLNodeArray *m_dxl_subquery_nodes;
+
 	// id of current query (and for nested queries), it's used for correct assigning
 	// of relation links to target relation of DML query
 	ULONG m_query_id;

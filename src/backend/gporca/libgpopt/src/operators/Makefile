@@ -191,7 +191,8 @@ OBJS        = CExpression.o \
               COrderedAggPreprocessor.o \
               CLeftJoinPruningPreprocessor.o \
               CJoinOrderHintsPreprocessor.o \
-              CDedupSupersetPreprocessor.o
+              CTransCTEPreprocessor.o \
+              CDedupSupersetPreprocessor.o 
 
 include $(top_srcdir)/src/backend/common.mk
 

@@ -88,6 +88,19 @@ CScalarConst::Matches(COperator *pop) const
 	return false;
 }
 
+BOOL
+CScalarConst::ApproximateMatches(COperator *pop, ColRefToExprMap *) const
+{
+	if (pop->Eopid() == Eopid())
+	{
+		CScalarConst *psconst = CScalarConst::PopConvert(pop);
+
+		return GetDatum()->MDId()->Equals(psconst->GetDatum()->MDId());
+	}
+
+	return false;
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CScalarConst::MdidType

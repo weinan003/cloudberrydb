@@ -61,6 +61,8 @@ private:
 	// direct dispatch spec
 	CDXLDirectDispatchInfo *m_direct_dispatch_info;
 
+	// array of DXL nodes which is generated from subqueries
+	CDXLNodeArray *m_dxl_subquery_nodes;
 public:
 	CDXLNode(const CDXLNode &) = delete;
 
@@ -124,6 +126,12 @@ public:
 		return m_direct_dispatch_info;
 	}
 
+	CDXLNodeArray *
+	GetDXLSubqueryNodes() const 
+	{
+		return m_dxl_subquery_nodes;
+	}
+
 	// setters
 	void AddChild(CDXLNode *child_dxlnode);
 
@@ -142,6 +150,8 @@ public:
 	// setter for direct dispatch info
 	void SetDirectDispatchInfo(
 		CDXLDirectDispatchInfo *dxl_direct_dispatch_info);
+
+	void SetSubqueryNodes(CDXLNodeArray *dxl_subquery_nodes);
 
 	// serialize properties in DXL format
 	void SerializePropertiesToDXL(CXMLSerializer *xml_serializer) const;

@@ -158,6 +158,10 @@ private:
 	static CExpression *PexprOuterJoinToInnerJoin(CMemoryPool *mp,
 												  CExpression *pexpr);
 
+	// collect common subqueries to CTE
+	static CExpression *PexprCollectCommSubqueriesToCTE(CMemoryPool *mp,
+														CExpression *pexpr);
+
 	// eliminate CTE Anchors for CTEs that have zero consumers
 	static CExpression *PexprRemoveUnusedCTEs(CMemoryPool *mp,
 											  CExpression *pexpr);

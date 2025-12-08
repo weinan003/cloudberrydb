@@ -163,6 +163,26 @@ CLogicalGet::Matches(COperator *pop) const
 		   m_has_security_quals == popGet->HasSecurityQuals();
 }
 
+BOOL
+CLogicalGet::ApproximateMatches(COperator *pop,
+								ColRefToExprMap *) const
+{
+	if (pop->Eopid() != Eopid())
+	{
+		return false;
+	}
+	CLogicalGet *popGet = CLogicalGet::PopConvert(pop);
+
+	if (!Ptabdesc()->MDId()->Equals(popGet->Ptabdesc()->MDId()))
+	{
+		return false;
+	}
+
+	// Approximate match LogicalGet does not consider column references
+	return (m_pdrgpcrOutput->Size() == popGet->PdrgpcrOutput()->Size()) &&
+		   (m_has_security_quals == popGet->HasSecurityQuals());
+}
+
 //---------------------------------------------------------------------------
 //	@function:
 //		CLogicalGet::PopCopyWithRemappedColumns
