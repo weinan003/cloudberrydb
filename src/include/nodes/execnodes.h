@@ -2464,6 +2464,9 @@ typedef struct HashJoinState
 	bool delayEagerFree; /* is safe to free memory used by this node,
 								 * when this node has outputted its last row? */
 	int		worker_id;	/* worker id for this process */
+
+	AttrNumber simple_inner_varno;
+	AttrNumber simple_outer_varno;
 } HashJoinState;
 
 

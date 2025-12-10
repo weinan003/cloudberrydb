@@ -55,10 +55,20 @@ extern bool ExecHashGetHashValue(HashState *hashState, HashJoinTable hashtable,
 								 bool keep_nulls,
 								 uint32 *hashvalue,
 								 bool *hashkeys_null);
+extern bool ExecHashSimpleIntGetHashValue(HashState *hashState,
+										  HashJoinTable hashtable,
+										  ExprContext *econtext,
+										  AttrNumber attnum,
+										  bool outer_tuple,
+										  bool keep_nulls,
+										  uint32 *hashvalue,
+										  bool *hashkeys_null);
 extern void ExecHashGetBucketAndBatch(HashJoinTable hashtable,
 									  uint32 hashvalue,
 									  int *bucketno,
 									  int *batchno);
+extern bool ExecScanSimpleIntHashBucket(HashJoinState *hjstate,
+										ExprContext *econtext);
 extern bool ExecScanHashBucket(HashState *hashState, HashJoinState *hjstate,
                                ExprContext *econtext);
 extern bool ExecParallelScanHashBucket(HashState *hashState, HashJoinState *hjstate,

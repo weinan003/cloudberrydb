@@ -2066,6 +2066,78 @@ ExecParallelHashTableInsertCurrentBatch(HashJoinTable hashtable,
 		heap_free_minimal_tuple(tuple);
 }
 
+bool
+ExecHashSimpleIntGetHashValue(HashState *hashState,
+							  HashJoinTable hashtable,
+							  ExprContext *econtext,
+							  AttrNumber attnum,
+							  bool outer_tuple,
+							  bool keep_nulls,
+							  uint32 *hashvalue,
+							  bool *hashkeys_null)
+{
+	Datum keyval;
+	uint32 hkey = 0;
+	uint32 hashkey = 0;
+	FmgrInfo *hashfunctions;
+	MemoryContext oldContext;
+	bool result = true;
+
+	Assert(hashkeys_null);
+	Assert(outer_tuple);
+
+	(*hashkeys_null) = true;
+
+	/*
+	 * We reset the eval context each time to reclaim any memory leaked in the
+	 * hashkey expressions.
+	 */
+	ResetExprContext(econtext);
+
+	oldContext = MemoryContextSwitchTo(econtext->ecxt_per_tuple_memory);
+
+	hashfunctions = hashtable->outer_hashfunctions;
+
+
+	/*
+	 * Get the join attribute value of the tuple
+	 */
+	keyval = slot_getattr(econtext->ecxt_outertuple, attnum, hashkeys_null);
+
+	/*
+	 * If the attribute is NULL, and the join operator is strict, then
+	 * this tuple cannot pass the join qual so we can reject it
+	 * immediately (unless we're scanning the outside of an outer join, in
+	 * which case we must not reject it).  Otherwise we act like the
+	 * hashcode of NULL is zero (this will support operators that act like
+	 * IS NOT DISTINCT, though not any more-random behavior).  We treat
+	 * the hash support function as strict even if the operator is not.
+	 *
+	 * Note: currently, all hashjoinable operators must be strict since
+	 * the hash index AM assumes that.  However, it takes so little extra
+	 * code here to allow non-strict that we may as well do it.
+	 */
+	if (*hashkeys_null)
+	{
+		if (hashtable->hashStrict[0] && !keep_nulls)
+		{
+			result = false;
+		}
+		/* else, leave hashkey unmodified, equivalent to hashcode 0 */
+	}
+	else if (result)
+	{
+		/* Compute the hash function */
+		hkey = DatumGetUInt32(FunctionCall1Coll(&hashfunctions[0], hashtable->collations[0], keyval));
+		hashkey ^= hkey;
+	}
+
+	MemoryContextSwitchTo(oldContext);
+
+	*hashvalue = hashkey;
+	return result;
+}
+
 /*
  * ExecHashGetHashValue
  *		Compute the hash value for a tuple
@@ -2240,6 +2312,68 @@ ExecHashGetBucketAndBatch(HashJoinTable hashtable,
 	}
 }
 
+bool
+ExecScanSimpleIntHashBucket(HashJoinState *hjstate,
+							ExprContext *econtext)
+{
+	/*
+	 * Greenplum specific behavior.
+	 * Using hashqualclauses to support hash join on 'IS NOT DISTINCT FROM'
+	 * as well as '='.
+	 */
+	HashJoinTable hashtable = hjstate->hj_HashTable;
+	HashJoinTuple hashTuple = hjstate->hj_CurTuple;
+	uint32		hashvalue = hjstate->hj_CurHashValue;
+
+	/*
+	 * hj_CurTuple is the address of the tuple last returned from the current
+	 * bucket, or NULL if it's time to start scanning a new bucket.
+	 *
+	 * If the tuple hashed to a skew bucket then scan the skew bucket
+	 * otherwise scan the standard hashtable bucket.
+	 */
+	if (hashTuple != NULL)
+		hashTuple = hashTuple->next.unshared;
+	else if (hjstate->hj_CurSkewBucketNo != INVALID_SKEW_BUCKET_NO)
+		hashTuple = hashtable->skewBucket[hjstate->hj_CurSkewBucketNo]->tuples;
+	else
+		hashTuple = hashtable->buckets.unshared[hjstate->hj_CurBucketNo];
+
+	while (hashTuple != NULL)
+	{
+		if (hashTuple->hashvalue == hashvalue)
+		{
+			TupleTableSlot *inntuple;
+			Datum d_outer, d_inner;
+
+			/* insert hashtable's tuple into exec slot so ExecQual sees it */
+			inntuple = ExecStoreMinimalTuple(HJTUPLE_MINTUPLE(hashTuple),
+											 hjstate->hj_HashTupleSlot,
+											 false);	/* do not pfree */
+			econtext->ecxt_innertuple = inntuple;
+
+			d_outer = econtext->ecxt_outertuple->tts_values[hjstate->simple_outer_varno];
+			d_inner = econtext->ecxt_innertuple->tts_values[hjstate->simple_inner_varno];
+
+			if (!econtext->ecxt_outertuple->tts_isnull[hjstate->simple_outer_varno] &&
+				!econtext->ecxt_innertuple->tts_isnull[hjstate->simple_inner_varno] &&
+				d_outer == d_inner)
+			{
+				MemoryContextReset(econtext->ecxt_per_tuple_memory);
+				hjstate->hj_CurTuple = hashTuple;
+				return true;
+			}
+			MemoryContextReset(econtext->ecxt_per_tuple_memory);
+		}
+
+		hashTuple = hashTuple->next.unshared;
+	}
+
+	/*
+	 * no match
+	 */
+	return false;
+}
 /*
  * ExecScanHashBucket
  *		scan a hash bucket for matches to the current outer tuple
