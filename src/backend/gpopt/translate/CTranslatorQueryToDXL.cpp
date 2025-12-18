@@ -36,6 +36,7 @@ extern "C" {
 #include "gpopt/mdcache/CMDAccessor.h"
 #include "gpopt/translate/CCTEListEntry.h"
 #include "gpopt/translate/CQueryMutators.h"
+#include "gpopt/translate/CQueryReformers.h"
 #include "gpopt/translate/CTranslatorDXLToPlStmt.h"
 #include "gpopt/translate/CTranslatorQueryToDXL.h"
 #include "gpopt/translate/CTranslatorRelcacheToDXL.h"
@@ -219,6 +220,10 @@ CTranslatorQueryToDXL::CTranslatorQueryToDXL(
 	// first normalize the query
 	m_query =
 		CQueryMutators::NormalizeQuery(m_mp, m_md_accessor, query, query_level);
+
+	// reform query
+	m_query =
+		CQueryReformers::ReformQuery(m_mp, m_md_accessor, m_query, query_level);
 
 	if (nullptr != m_query->cteList)
 	{

@@ -230,6 +230,9 @@ Bitmapset *BmsAddMember(Bitmapset *a, int x);
 // next member of Bitmapset
 int BmsNextMember(const Bitmapset *a, int prevbit);
 
+// is Bitmapset member
+bool BmsIsMember(int x,Bitmapset *a);
+
 // create a copy of an object
 void *CopyObject(void *from);
 
@@ -502,6 +505,9 @@ void ListFree(List *list);
 // deep free of a list
 void ListFreeDeep(List *list);
 
+// sort list
+void ListSort(List *list, list_sort_comparator cmp);
+
 // lookup type cache
 TypeCacheEntry *LookupTypeCache(Oid type_id, int flags);
 
@@ -530,6 +536,8 @@ TargetEntry *MakeTargetEntry(Expr *expr, AttrNumber resno, char *resname,
 // create a new var node
 Var *MakeVar(Index varno, AttrNumber varattno, Oid vartype, int32 vartypmod,
 			 Index varlevelsup);
+
+Alias *MakeAlias(const char *aliasname, List *colnames);
 
 // memory allocation functions
 void *MemCtxtAllocZeroAligned(MemoryContext context, Size size);
@@ -602,6 +610,12 @@ Node *MutateExpressionTree(Node *node, Node *(*mutator)(Node *, void *), void *c
 // modify a query or an expression tree
 Node *MutateQueryOrExpressionTree(Node *node, Node *(*mutator)(Node *, void *), void *context,
 								  int flags);
+
+// check if node contain outervar
+bool ContainVarsOfLevelOrAbove(Node *node, int levelsup);
+
+// canonicalize qual expr
+Expr *CanonicalizeQual(Expr *quals, bool is_check);
 
 // check whether a relation is inherited
 bool HasSubclassSlow(Oid rel_oid);

@@ -21,6 +21,7 @@ OBJS =  CMappingColIdVar.o \
 		CContextDXLToPlStmt.o \
 		CDXLTranslateContext.o \
 		CQueryMutators.o \
+		CQueryReformers.o \
 		CTranslatorScalarToDXL.o \
 		CTranslatorDXLToScalar.o \
 		CTranslatorUtils.o \
